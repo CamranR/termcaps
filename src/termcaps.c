@@ -76,15 +76,15 @@ int	get_key(char **env)
 	char *delete;
 	static int len = 0;
 	static int pos = 0;
-	int col = 0;
-	int rows = 0;
+	//int col = 0;
+	//int rows = 0;
 
 	if ((clear = tgetstr("cl", NULL)) == NULL)
 		return (-1);
 	if ((delete = tgetstr("dc", NULL)) == NULL)
 		return (-1);
-	get_cursor_position(&col, &rows);
-	col += 1;
+	//get_cursor_position(&col, &rows);
+	//col += 1;
 	prompt(env);
 	while (1) {
 		read(0, buffer, 3);
@@ -102,7 +102,7 @@ int	get_key(char **env)
 					write(1, "\033[D", 4);
 			}
 			if (buffer[2] == 68) {
-				if (pos > 1)
+				if (pos > 0)
 					pos -= 1;
 				else
 					write(1, "\033[C", 4);
@@ -112,6 +112,7 @@ int	get_key(char **env)
 			break;
 		} else if (buffer[0] == 4) {
 			write(1, "exit\n", 5);
+			write(1, "\033c", 3);
 			exit(0);
 		} else if (buffer[0] == 12) {
 			tputs(clear, 0, write_char);
@@ -120,18 +121,20 @@ int	get_key(char **env)
 			len = 0;
 			pos = 0;
 			break;
-		// } else if (buffer[0] == 126 && buffer[2] == 51) {
-		// 	if (len > 1 && pos < len) {
-		// 		tputs(delete, 0, write_char);
-		// 		len -= 1;
-		// 	}
-		} else if (buffer[0] >= 32 && buffer[0] <= 126) {
-			if (len == pos) {
-				len += 1;
+		} else if (buffer[0] == 126 && buffer[2] == 51) {
+			if (len > 0 && pos <= len) {
+				tputs(delete, 0, write_char);
+				len -= 1;
 			}
+			for (int i = 0; i < 4; i++) {
+				write(1, "\033[D", 4);
+				tputs(delete, 0, write_char);
+			}
+		} else if (buffer[0] >= 32 && buffer[0] <= 126) {
+			len += 1;
 			pos += 1;
 		} else if (buffer[0] == 127) {
-			if (len > 1 && pos > 0 ) {
+			if (len > 0 && pos > 0 ) {
 				write(1, "\033[D", 4);
 				tputs(delete, 0, write_char);
 				len -= 1;
