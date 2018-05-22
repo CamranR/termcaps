@@ -50,10 +50,7 @@ void get_cursor_position(int *col, int *rows)
 	int a = 0;
 	int i = 0;
 	char buf[4];
-	//int fd = open(".size", O_CREAT & O_WRONLY);
 
-	// write(fd, "\033[6n", 4);
-	// read(fd, buf, 4);
 	write(1, "\033[6n", 4);
 	read(1, buf, 4);
 	while (buf[i]) {
@@ -66,34 +63,50 @@ void get_cursor_position(int *col, int *rows)
 		}
 		i++;
 	}
-	//close(fd);
+}
+
+char *add_char(char *str, char c, int len, int pos)
+{
+	char *next = calloc(1, len + 1);
+	int i = 0;
+
+	for (; i < pos; i++)
+		next[i] = str[i];
+	next[i++] = c;
+	for (int j = i - 1; i < len; i++)
+		next[i] = str[j++];
+	if (str != NULL)
+		free(str);
+	return (next);
 }
 
 int	get_key(char **env)
 {
 	char buffer[3];
+	char *str = calloc(1, 1);
 	char *clear;
 	char *delete;
 	static int len = 0;
 	static int pos = 0;
-	//int col = 0;
-	//int rows = 0;
 
 	if ((clear = tgetstr("cl", NULL)) == NULL)
 		return (-1);
 	if ((delete = tgetstr("dc", NULL)) == NULL)
 		return (-1);
-	//get_cursor_position(&col, &rows);
-	//col += 1;
 	prompt(env);
 	while (1) {
+		write(1, "\033[3g", 5);
 		read(0, buffer, 3);
-		if (buffer[0] == 27) {
+		if (buffer[0] == 9) {
+			//	place autocomplete here!!!!
+		} else if (buffer[0] == 27) {
 			if (buffer[2] == 65) {
 				write(1, "\033[B", 4);
+				//place history up here!!!
 			}
 			if (buffer[2] == 66) {
 				write(1, "\033[A", 4);
+				//place history down here!!!
 			}
 			if (buffer[2] == 67) {
 				if (pos < len)
@@ -108,11 +121,11 @@ int	get_key(char **env)
 					write(1, "\033[C", 4);
 			}
 		} else if (buffer[0] == 3) {
-			printf("\n");
+			printf("\n[%s]\n", str);
 			break;
 		} else if (buffer[0] == 4) {
 			write(1, "exit\n", 5);
-			write(1, "\033c", 3);
+			write(1, "\033c", 3);	// a virer une fois que tu restore le term
 			exit(0);
 		} else if (buffer[0] == 12) {
 			tputs(clear, 0, write_char);
@@ -132,9 +145,10 @@ int	get_key(char **env)
 			}
 		} else if (buffer[0] >= 32 && buffer[0] <= 126) {
 			len += 1;
+			str = add_char(str, buffer[0], len, pos);
 			pos += 1;
 		} else if (buffer[0] == 127) {
-			if (len > 0 && pos > 0 ) {
+			if (len > 0 && pos > 0) {
 				write(1, "\033[D", 4);
 				tputs(delete, 0, write_char);
 				len -= 1;
