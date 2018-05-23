@@ -228,9 +228,9 @@ int	get_key(char **env)
 			if (save != NULL) {
 				write (1, save, strlen(save));
 				for (int i = 0; save[i]; i++) {
-					pos += 1;
-					str = add_char(str, save[i], len, pos);
 					len += 1;
+					str = add_char(str, save[i], len, pos);
+					pos += 1;
 				}
 			}
 		} else if (buffer[0] == 27) {
