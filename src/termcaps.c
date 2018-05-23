@@ -80,6 +80,20 @@ char *add_char(char *str, char c, int len, int pos)
 	return (next);
 }
 
+char *del_char(char *str, int len, int pos)
+{
+	char *next = calloc(1, len);
+	int i = 0;
+
+	for (; i < pos; i++)
+		next[i] = str[i];
+	for (int j = i + 1; i < len; i++)
+		next[i] = str[j++];
+	if (str != NULL)
+		free(str);
+	return (next);
+}
+
 int	get_key(char **env)
 {
 	char buffer[3];
@@ -130,8 +144,9 @@ int	get_key(char **env)
 				write(1, "exit\n", 5);
 				write(1, "\033c", 3);	// a virer une fois que tu restore le term
 				exit(0);
-			} else if (pos != len) {
+			} else if (pos < len) {
 				tputs(delete, 0, write_char);
+				str = del_char(str, len, pos);
 				len -= 1;
 			} else {
 				write(1, "\n", 1);
@@ -148,6 +163,7 @@ int	get_key(char **env)
 		} else if (buffer[0] == 126 && buffer[2] == 51) {
 			if (len > 0 && pos < len) {
 				tputs(delete, 0, write_char);
+				str = del_char(str, len, pos);
 				len -= 1;
 			}
 			for (int i = 0; i < 4; i++) {
@@ -160,10 +176,11 @@ int	get_key(char **env)
 			pos += 1;
 		} else if (buffer[0] == 127) {
 			if (len > 0 && pos > 0) {
+				pos -= 1;
 				write(1, "\033[D", 4);
 				tputs(delete, 0, write_char);
+				str = del_char(str, len, pos);
 				len -= 1;
-				pos -= 1;
 			}
 		}
 	}
