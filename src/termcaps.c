@@ -138,7 +138,7 @@ int	get_key(char **env)
 			tputs(delete, 0, write_char);
 			if (len == 0) {
 				write(1, "exit\n", 5);
-				write(1, "\033c", 3);	// a virer une fois que tu restore le term
+//				write(1, "\033c", 3);	// a virer une fois que tu restore le term
 				return (-42);
 			} else if (pos < len) {
 				tputs(delete, 0, write_char);
@@ -291,6 +291,7 @@ int	main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 	char	*insert_mode;
 	struct	termios term;
 	struct	termios backup;
+	char	*blink;
 
 	get_term_size();
 	if ((name_term = getenv("TERM")) == NULL)
@@ -311,10 +312,15 @@ int	main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 	if ((insert_mode = tgetstr("im", NULL)) == NULL)
 		return (-1);
 	tputs(insert_mode, 0, write_char);
-	while (1)
+	if ((blink = tgetstr("vb", NULL)) == NULL)		//totally
+		return (-1);					//useless
+	while (1) {
+		tputs(blink, 0, write_char);			//but it's a feature
 		if (get_key(env) == -42)
 			break;
+	}
 	if (tcsetattr(0, TCSADRAIN, &term) == -1)
 		return (-1);
+	//write(1, "\33[H\33[2J", 8);
 	return (0);
 }
