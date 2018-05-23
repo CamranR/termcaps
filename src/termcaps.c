@@ -121,12 +121,23 @@ int	get_key(char **env)
 					write(1, "\033[C", 4);
 			}
 		} else if (buffer[0] == 3) {
-			printf("\n[%s]\n", str);
+			printf("\n");
 			break;
 		} else if (buffer[0] == 4) {
-			write(1, "exit\n", 5);
-			write(1, "\033c", 3);	// a virer une fois que tu restore le term
-			exit(0);
+			write(1, "\033[D", 4);
+			tputs(delete, 0, write_char);
+			if (len == 0) {
+				write(1, "exit\n", 5);
+				write(1, "\033c", 3);	// a virer une fois que tu restore le term
+				exit(0);
+			} else if (pos != len) {
+				tputs(delete, 0, write_char);
+				len -= 1;
+			} else {
+				write(1, "\n", 1);
+				prompt(env);
+				write(1, str, len);
+			}
 		} else if (buffer[0] == 12) {
 			tputs(clear, 0, write_char);
 			break;
@@ -135,7 +146,7 @@ int	get_key(char **env)
 			pos = 0;
 			break;
 		} else if (buffer[0] == 126 && buffer[2] == 51) {
-			if (len > 0 && pos <= len) {
+			if (len > 0 && pos < len) {
 				tputs(delete, 0, write_char);
 				len -= 1;
 			}
