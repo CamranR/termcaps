@@ -139,7 +139,7 @@ int	get_key(char **env)
 			if (len == 0) {
 				write(1, "exit\n", 5);
 				write(1, "\033c", 3);	// a virer une fois que tu restore le term
-				exit(0);
+				return (-42);
 			} else if (pos < len) {
 				tputs(delete, 0, write_char);
 				str = del_char(str, len, pos);
@@ -288,8 +288,9 @@ int	main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 		char **env)
 {
 	char	*name_term;
-	char *insert_mode;
-	struct termios term;
+	char	*insert_mode;
+	struct	termios term;
+	struct	termios backup;
 
 	get_term_size();
 	if ((name_term = getenv("TERM")) == NULL)
@@ -297,6 +298,8 @@ int	main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 	if (tgetent(NULL, name_term) == ERR)
 		return (-1);
 	if (tcgetattr(0, &term) == -1)
+		return (-1);
+	if (tcgetattr(0, &backup) == -1)
 		return (-1);
 
 	term.c_lflag &= ~(ICANON);
@@ -309,6 +312,9 @@ int	main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 		return (-1);
 	tputs(insert_mode, 0, write_char);
 	while (1)
-		get_key(env);
+		if (get_key(env) == -42)
+			break;
+	if (tcsetattr(0, TCSADRAIN, &term) == -1)
+		return (-1);
 	return (0);
 }
