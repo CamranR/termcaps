@@ -100,41 +100,38 @@ int	get_key(char **env)
 	char *str = calloc(1, 1);
 	char *clear;
 	char *delete;
-	static int len = 0;
-	static int pos = 0;
+	char *dump;
+	static char *save = NULL;
+	int len = 0;
+	int pos = 0;
 
 	if ((clear = tgetstr("cl", NULL)) == NULL)
 		return (-1);
 	if ((delete = tgetstr("dc", NULL)) == NULL)
 		return (-1);
 	prompt(env);
+	save = calloc(1, 1);
 	while (1) {
 		write(1, "\033[3g", 5);
 		read(0, buffer, 3);
-		if (buffer[0] == 9) {
-			//	place autocomplete here!!!!
-		} else if (buffer[0] == 27) {
-			if (buffer[2] == 65) {
-				write(1, "\033[B", 4);
-				//place history up here!!!
+		//printf("\n%d, %d, %d\n", buffer[0], buffer[1], buffer[2]);
+		if (buffer[0] == 1) {
+			write(1, "\033[D", 4);
+			tputs(delete, 0, write_char);
+			while (pos > 0) {
+				write(1, "\033[D", 4);
+				pos -= 1;
 			}
-			if (buffer[2] == 66) {
-				write(1, "\033[A", 4);
-				//place history down here!!!
-			}
-			if (buffer[2] == 67) {
-				if (pos < len)
-					pos += 1;
-				else
-					write(1, "\033[D", 4);
-			}
-			if (buffer[2] == 68) {
-				if (pos > 0)
-					pos -= 1;
-				else
-					write(1, "\033[C", 4);
+		} else if (buffer [0] == 2) {
+			write(1, "\033[D", 4);
+			tputs(delete, 0, write_char);
+			if (pos > 0) {
+				write(1, "\033[D", 4);
+				pos -= 1;
 			}
 		} else if (buffer[0] == 3) {
+			write(1, "\033[D", 4);
+			tputs(delete, 0, write_char);
 			printf("\n");
 			break;
 		} else if (buffer[0] == 4) {
@@ -153,15 +150,116 @@ int	get_key(char **env)
 				prompt(env);
 				write(1, str, len);
 			}
+		} else if (buffer[0] == 5) {
+			while (pos != len) {
+				write(1, "\033[C", 4);
+				pos += 1;
+			}
+		} else if (buffer [0] == 6) {
+			write(1, "\033[D", 4);
+			tputs(delete, 0, write_char);
+			if (pos < len) {
+				write(1, "\033[C", 4);
+				pos += 1;
+			}
+		} else if (buffer [0] == 8) {
+			if (len > 0 && pos > 0) {
+				pos -= 1;
+				tputs(delete, 0, write_char);
+				str = del_char(str, len, pos);
+				len -= 1;
+			} else
+				write(1, "\033[C", 4);
+		} else if (buffer[0] == 9) {
+				//	place autocomplete here!!!!
+		} else if (buffer[0] == 10) {
+			break;
+		} else if (buffer[0] == 11) {
+			write(1, "\033[A", 4);
+			if (save != NULL) {
+				free (save);
+				save = calloc(1, 1);
+			}
+			while (pos < len) {
+				tputs(delete, 0, write_char);
+				save = add_char(save, str[pos], strlen(save), strlen(save));
+				str = del_char(str, len, pos);
+				len -= 1;
+			}
 		} else if (buffer[0] == 12) {
 			tputs(clear, 0, write_char);
-			break;
-		} else if (buffer[0] == 10) {
-			len = 0;
-			pos = 0;
-			break;
+			prompt(env);
+			write(1, str, len);
+		} else if (buffer[0] == 21) {
+			write(1, "\033[D", 4);
+			tputs(delete, 0, write_char);
+			if (save != NULL)
+				free (save);
+			if (str != NULL) {
+				save = strdup(str);
+				free(str);
+				str = calloc(1, 1);
+			}
+			while (pos > 0) {
+				write(1, "\033[D", 4);
+				pos -= 1;
+			}
+			while (len > 0) {
+				tputs(delete, 0, write_char);
+				len -= 1;
+			}
+		} else if (buffer[0] == 23) {
+			write(1, "\033[D", 4);
+			tputs(delete, 0, write_char);
+			if (save != NULL) {
+				free (save);
+				save = calloc(1, 1);
+			}
+			while (pos > 0) {
+				pos -= 1;
+				write(1, "\033[D", 4);
+				tputs(delete, 0, write_char);
+				save = add_char(save, str[pos], strlen(save) + 1, 0);
+				str = del_char(str, len, pos);
+				len -= 1;
+			}
+		} else if (buffer[0] == 25) {
+			write(1, "\033[D", 4);
+			tputs(delete, 0, write_char);
+			if (save != NULL) {
+				dump = strdup(str);
+				free(str);
+				str = calloc (1, len + strlen(save) + 1);
+				write (1, save, strlen(save));
+				strcat(str, dump);
+				strcat(str, save);
+				len += strlen(save);
+				pos += strlen(save);
+				free (dump);
+			}
+		} else if (buffer[0] == 27) {
+				if (buffer[2] == 65) {
+					write(1, "\033[B", 4);
+					//place history up here!!!
+				}
+				if (buffer[2] == 66) {
+					write(1, "\033[A", 4);
+					//place history down here!!!
+				}
+				if (buffer[2] == 67) {
+					if (pos < len)
+						pos += 1;
+					else
+						write(1, "\033[D", 4);
+				}
+				if (buffer[2] == 68) {
+					if (pos > 0)
+						pos -= 1;
+					else
+						write(1, "\033[C", 4);
+				}
 		} else if (buffer[0] == 126 && buffer[2] == 51) {
-			if (len > 0 && pos < len) {
+			if (pos < len) {
 				tputs(delete, 0, write_char);
 				str = del_char(str, len, pos);
 				len -= 1;
@@ -182,6 +280,9 @@ int	get_key(char **env)
 				str = del_char(str, len, pos);
 				len -= 1;
 			}
+		} else if (buffer[0] != 15 && buffer[0] != 7 && buffer[0] != 14) {
+			write(1, "\033[D", 4);
+			tputs(delete, 0, write_char);
 		}
 	}
 	return (0);
