@@ -100,7 +100,6 @@ int	get_key(char **env)
 	char *str = calloc(1, 1);
 	char *clear;
 	char *delete;
-	char *dump;
 	static char *save = NULL;
 	int len = 0;
 	int pos = 0;
@@ -227,15 +226,12 @@ int	get_key(char **env)
 			write(1, "\033[D", 4);
 			tputs(delete, 0, write_char);
 			if (save != NULL) {
-				dump = strdup(str);
-				free(str);
-				str = calloc (1, len + strlen(save) + 1);
 				write (1, save, strlen(save));
-				strcat(str, dump);
-				strcat(str, save);
-				len += strlen(save);
-				pos += strlen(save);
-				free (dump);
+				for (int i = 0; save[i]; i++) {
+					pos += 1;
+					str = add_char(str, save[i], len, pos);
+					len += 1;
+				}
 			}
 		} else if (buffer[0] == 27) {
 				if (buffer[2] == 65) {
