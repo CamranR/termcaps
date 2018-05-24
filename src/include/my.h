@@ -31,6 +31,14 @@
 #define CYAN		"\033[01;34m"
 #define UNDERLINE	"\033[4m"
 
+typedef struct termline_t {
+	char *str;
+	char *del;
+	char *clear;
+	int pos;
+	int len;
+} termline_s;
+
 	void	my_putchar(char);
 	int	my_isneg(int);
 	int	my_put_nbr(int);
