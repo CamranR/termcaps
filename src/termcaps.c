@@ -11,19 +11,16 @@
 
 #define gotoxy(x,y) printf("\033[%d;%dH", (x), (y))
 
-int	write_char(int c)
+int write_char(int c)
 {
 	write(1, &c, 1);
 	return (0);
 }
 
-void	get_term_size(void)
+void get_term_size(void)
 {
 	struct winsize w;
 	ioctl(0, TIOCGWINSZ, &w);
-
-//	printf ("lines %d\n", w.ws_row);
-//	printf ("columns %d\n", w.ws_col);
 }
 
 void prompt(char **env)
@@ -369,43 +366,56 @@ char *get_key(char **env)
 	}
 }
 
-int	main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
-		char **env)
+int check_terminal(struct termios *term, struct termios *backup)
 {
-	char	*name_term;
-	char	*insert_mode;
-	struct	termios term;
-	struct	termios backup;
-	char	*blink;
+	char *name_term = NULL;
 
-	get_term_size();
 	if ((name_term = getenv("TERM")) == NULL)
 		return (-1);
 	if (tgetent(NULL, name_term) == ERR)
 		return (-1);
-	if (tcgetattr(0, &term) == -1)
+	if (tcgetattr(0, term) == -1)
 		return (-1);
-	if (tcgetattr(0, &backup) == -1)
+	if (tcgetattr(0, backup) == -1)
 		return (-1);
+	(*term).c_lflag &= ~(ICANON);
+	(*term).c_lflag &= (ECHO);
+	(*term).c_cc[VMIN] = 1;
+	(*term).c_cc[VTIME] = 0;
+	return (0);
+}
 
-	term.c_lflag &= ~(ICANON);
-	term.c_lflag &= (ECHO);
-	term.c_cc[VMIN] = 1;
-	term.c_cc[VTIME] = 0;
-	if (tcsetattr(0, TCSADRAIN, &term) == -1)
-		return (-1);
-	if ((insert_mode = tgetstr("im", NULL)) == NULL)
-		return (-1);
+int run_term(char **env, char *insert_mode)
+{
+	char *blink = NULL;
+
 	tputs(insert_mode, 0, write_char);
-	if ((blink = tgetstr("vb", NULL)) == NULL)		//totally
-		return (-1);					//useless
+	if ((blink = tgetstr("vb", NULL)) == NULL)
+		return (-1);
 	while (1) {
 		tputs(blink, 0, write_char);			//but it's a feature
 		if (get_key(env) == NULL)
 			break;
 	}
+	return (0);
+}
+
+int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
+		char **env)
+{
+	char *insert_mode = NULL;
+	struct termios term;
+	struct termios backup;
+
+	get_term_size();
+	if (check_terminal(&term, &backup) == -1)
+		return (84);
 	if (tcsetattr(0, TCSADRAIN, &term) == -1)
-		return (-1);
-	//write(1, "\33[H\33[2J", 8);
+		return (84);
+	if ((insert_mode = tgetstr("im", NULL)) == NULL)
+		return (84);
+	run_term(env, insert_mode);
+	if (tcsetattr(0, TCSADRAIN, &term) == -1)
+		return (84);
 	return (0);
 }
