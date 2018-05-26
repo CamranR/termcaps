@@ -13,7 +13,6 @@ int write_char(int c)
 	return (0);
 }
 
-
 void check_git_prompt(void)
 {
 	int flag = -42;
@@ -23,7 +22,7 @@ void check_git_prompt(void)
 	if (flag == 0) {
 		system("git rev-parse --abbrev-ref HEAD > .tmp_git");
 		branch = read_file(".tmp_git");
-		printf("%s%s%s", CYAN, "\u256C ", WHITE);
+		printf("%s%s%s", CYAN, "\u2540 ", WHITE);
 		for (int i = 0; branch[i] != '\n'; i++)
 			printf("%s%c%s", CYAN, branch[i], WHITE);
 		printf("> ");
@@ -130,7 +129,7 @@ char *ctrl_d(termline_s *line, char **env)
 	if (line->len == 0) {
 		free_termline(line);
 		write(1, "exit\n", 5);
-		system("reset");
+		system("reset xterm");
 		return (NULL);
 	} else if (line->pos < line->len) {
 		tputs(line->del, 0, write_char);
