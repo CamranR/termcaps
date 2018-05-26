@@ -62,6 +62,12 @@ void get_cursor_position(int *col, int *rows)
 	}
 }
 
+void free_termline(termline_s *line)
+{
+	free (line->str);
+	free (line);
+}
+
 char *add_char(char *str, char c, int len, int pos)
 {
 	char *next = calloc(1, len + 1);
@@ -128,6 +134,7 @@ char *ctrl_d(termline_s *line, char **env)
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (line->len == 0) {
+		free_termline(line);
 		write(1, "exit\n", 5);
 //		write(1, "\033c", 3);	// a virer une fois que tu restore le term
 		return (NULL);
@@ -308,14 +315,15 @@ termline_s *init_line(void)
 	return (line);
 }
 
-char *get_key(char **env)
+termline_s *get_key(char **env)
 {
 	char buffer[3];
 	termline_s *line = init_line();
 	static char *save = NULL;
 
 	prompt(env);
-	save = calloc(1, 1);
+	if (save == NULL)
+		save = calloc(1, 1);
 	while (1) {
 		write(1, "\033[3g", 5);
 		read(0, buffer, 3);
@@ -327,8 +335,11 @@ char *get_key(char **env)
 		else if (buffer[0] == 3)
 			ctrl_c(line, env);
 		else if (buffer[0] == 4) {
-			if (ctrl_d(line, env) == NULL)
+			if (ctrl_d(line, env) == NULL) {
+				if (save != NULL)
+					free(save);
 				return (NULL);
+			}
 		} else if (buffer[0] == 5)
 			ctrl_e(line);
 		else if (buffer [0] == 6)
@@ -338,7 +349,7 @@ char *get_key(char **env)
 		// else if (buffer[0] == 9)
 		// 	//	place autocomplete here!!!!
 		else if (buffer[0] == 10)
-			return (line->str);
+			return (line);
 		else if (buffer[0] == 11)
 			ctrl_k(line, &save);
 		else if (buffer[0] == 12)
@@ -388,14 +399,21 @@ int check_terminal(struct termios *term, struct termios *backup)
 int run_term(char **env, char *insert_mode)
 {
 	char *blink = NULL;
+	termline_s *command_line;
+	char *cmd;
 
 	tputs(insert_mode, 0, write_char);
 	if ((blink = tgetstr("vb", NULL)) == NULL)
 		return (-1);
 	while (1) {
-		tputs(blink, 0, write_char);			//but it's a feature
-		if (get_key(env) == NULL)
+		//tputs(blink, 0, write_char);			//clignotage de merde!
+		if ((command_line = get_key(env)) == NULL)
 			break;
+		else {
+			cmd = strdup(command_line->str);
+			free_termline (command_line);
+			free(cmd);	// here place quentin part instead of free
+		}
 	}
 	return (0);
 }
