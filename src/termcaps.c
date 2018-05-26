@@ -331,52 +331,70 @@ void check_one_sub(char **save)
 
 char *check_one(char buffer[3], char **save, termline_s *line, char **env)
 {
-	if (buffer[0] == 1)
-		ctrl_a(line);
-	else if (buffer [0] == 2)
-		ctrl_b(line);
-	else if (buffer[0] == 3)
-		ctrl_c(line, env);
-	else if (buffer[0] == 4) {
-		if (ctrl_d(line, env) == NULL) {
-			check_one_sub(save);
-			return (NULL);
-		}
+	switch (buffer[0]) {
+		case 1:
+			ctrl_a(line);
+			break;
+		case 2:
+			ctrl_b(line);
+			break;
+		case 3:
+			ctrl_c(line, env);
+			break;
+		case 4:
+			if (ctrl_d(line, env) == NULL) {
+				check_one_sub(save);
+				return (NULL);
+			}
 	}
 	return ("ok");
 }
 
-termline_s *check_two(char buffer[3], char **save, termline_s *line, char **env)
+void check_three(char buffer[3], char **save, termline_s * line, char **env)
 {
-	if (buffer[0] == 5)
-		ctrl_e(line);
-	else if (buffer [0] == 6)
-		ctrl_f(line);
-	else if (buffer [0] == 8)
-		ctrl_h(line);
-	// else if (buffer[0] == 9)
-	// 	//	place autocomplete here!!!!
-	else if (buffer[0] == 10)
-		return (line);
-	else if (buffer[0] == 11)
-		ctrl_k(line, save);
-	else if (buffer[0] == 12)
-		ctrl_l(line, env);
-	else if (buffer[0] == 21)
-		ctrl_u(line, save);
-	return (NULL);
+	switch (buffer[0]) {
+		case 12:
+			ctrl_l(line, env);
+			break;
+		case 21:
+			ctrl_u(line, save);
+			break;
+		case 23:
+			ctrl_w(line, save);
+			break;
+		case 25:
+			ctrl_y(line, save);
+			break;
+		case 27:
+			keys_control(buffer, line);
+			break;
+		case 126:
+			if (buffer[2] == 51)
+				key_suppr(line);
+	}
 }
 
-void check_three(char buffer[3], char **save, termline_s *line)
+termline_s *check_two(char buffer[3], char **save, termline_s *line, char **env)
 {
-	if (buffer[0] == 23)
-		ctrl_w(line, save);
-	else if (buffer[0] == 25)
-		ctrl_y(line, save);
-	else if (buffer[0] == 27)
-		keys_control(buffer, line);
-	else if (buffer[0] == 126 && buffer[2] == 51)
-		key_suppr(line);
+	switch (buffer[0]) {
+		case 5:
+			ctrl_e(line);
+			break;
+		case 6:
+			ctrl_f(line);
+			break;
+		case 8:
+			ctrl_h(line);
+			break;
+		case 10:
+			return (line);
+		case 11:
+			ctrl_k(line, save);
+			break;
+		default:
+			check_three(buffer, save, line, env);
+	}
+	return (NULL);
 }
 
 void check_four(char buffer[3], termline_s *line)
@@ -388,9 +406,11 @@ void check_four(char buffer[3], termline_s *line)
 		line->pos += 1;
 	} else if (buffer[0] == 127)
 		key_delete(line);
-	else if (buffer[0] != 15 && buffer[0] != 7 && buffer[0] != 14) {
-		write(1, "\033[D", 4);
-		tputs(line->del, 0, write_char);
+	else {
+		if (buffer[0] != 15 && buffer[0] != 7 && buffer[0] != 14) {
+			write(1, "\033[D", 4);
+			tputs(line->del, 0, write_char);
+		}
 	}
 }
 
@@ -410,9 +430,6 @@ termline_s *get_key(char **env, char **save)
 			continue;
 		if (check_two(buffer, save, line, env) != NULL)
 			return (line);
-		if (line->check == 1)
-			continue;
-		check_three(buffer, save, line);
 		if (line->check == 1)
 			continue;
 		check_four(buffer, line);
@@ -480,15 +497,15 @@ int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 	struct termios backup;
 
 	if (env[0]) {
-	if (check_terminal(&term, &backup) == -1)
-		return (84);
-	if (tcsetattr(0, TCSADRAIN, &term) == -1)
-		return (84);
-	if ((insert_mode = tgetstr("im", NULL)) == NULL)
-		return (84);
-	run_term(env, insert_mode);
-	if (tcsetattr(0, TCSADRAIN, &term) == -1)
-		return (84);
+		if (check_terminal(&term, &backup) == -1)
+			return (84);
+		if (tcsetattr(0, TCSADRAIN, &term) == -1)
+			return (84);
+		if ((insert_mode = tgetstr("im", NULL)) == NULL)
+			return (84);
+		run_term(env, insert_mode);
+		if (tcsetattr(0, TCSADRAIN, &term) == -1)
+			return (84);
 	} else {
 		run_term_no_env(env);
 	}
