@@ -13,12 +13,6 @@ int write_char(int c)
 	return (0);
 }
 
-void get_term_size(void)
-{
-	struct winsize w;
-	ioctl(0, TIOCGWINSZ, &w);
-}
-
 void prompt(char **env)
 {
 	char *host = NULL;
@@ -136,7 +130,7 @@ char *ctrl_d(termline_s *line, char **env)
 	if (line->len == 0) {
 		free_termline(line);
 		write(1, "exit\n", 5);
-//		write(1, "\033c", 3);	// a virer une fois que tu restore le term
+		system("reset");
 		return (NULL);
 	} else if (line->pos < line->len) {
 		tputs(line->del, 0, write_char);
@@ -465,6 +459,19 @@ int run_term(char **env, char *insert_mode)
 	return (0);
 }
 
+void run_term_no_env(char **env)
+{
+	int vale = 0;
+	char *geted = NULL;
+	size_t n;
+
+	while (1) {
+		prompt(env);
+		if ((vale = getline(&geted, &n, stdin)) < 0)
+			break;
+	}
+}
+
 int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 		char **env)
 {
@@ -472,7 +479,7 @@ int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 	struct termios term;
 	struct termios backup;
 
-	get_term_size();
+	if (env[0]) {
 	if (check_terminal(&term, &backup) == -1)
 		return (84);
 	if (tcsetattr(0, TCSADRAIN, &term) == -1)
@@ -482,5 +489,8 @@ int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 	run_term(env, insert_mode);
 	if (tcsetattr(0, TCSADRAIN, &term) == -1)
 		return (84);
+	} else {
+		run_term_no_env(env);
+	}
 	return (0);
 }
