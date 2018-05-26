@@ -23,6 +23,7 @@ void check_git_prompt(void)
 	if (flag == 0) {
 		system("git rev-parse --abbrev-ref HEAD > .tmp_git");
 		branch = read_file(".tmp_git");
+		printf("%s%s%s", CYAN, "\u256C ", WHITE);
 		for (int i = 0; branch[i] != '\n'; i++)
 			printf("%s%c%s", CYAN, branch[i], WHITE);
 		printf("> ");
