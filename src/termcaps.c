@@ -15,7 +15,19 @@ int write_char(int c)
 
 void check_git_prompt(void)
 {
+	int flag = -42;
+	char *branch = NULL;
 
+	flag = system("git rev-parse --is-inside-work-tree > /dev/null 2>&1");
+	if (flag == 0) {
+		system("git rev-parse --abbrev-ref HEAD > .tmp_git");
+		branch = read_file(".tmp_git");
+		for (int i = 0; branch[i] != '\n'; i++)
+			printf("%s%c%s", CYAN, branch[i], WHITE);
+		printf("> ");
+		fflush(stdout);
+		system("rm .tmp_git");
+	}
 }
 
 void prompt(char **env)

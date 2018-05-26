@@ -28,8 +28,8 @@
 #define YELLOW		"\033[01;32m"
 #define GREEN		"\033[01;33m"
 #define WHITE		"\033[0m"
-#define CYAN		"\033[01;34m"
-#define UNDERLINE	"\033[4m"
+#define UNDERLINE	"\033[01;34m"
+#define CYAN		"\x1b[36m"
 
 typedef struct termline_t {
 	char *str;
@@ -39,5 +39,7 @@ typedef struct termline_t {
 	int len;
 	int check;
 } termline_s;
+
+char *read_file(char *path);
 
 #endif	/* MY_Y_ */
