@@ -7,10 +7,6 @@
 
 #include "my.h"
 
-#define ESC 27
-
-#define gotoxy(x,y) printf("\033[%d;%dH", (x), (y))
-
 int write_char(int c)
 {
 	write(1, &c, 1);
@@ -99,6 +95,7 @@ char *del_char(char *str, int len, int pos)
 
 void ctrl_a(termline_s *line)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	while (line->pos > 0) {
@@ -109,6 +106,7 @@ void ctrl_a(termline_s *line)
 
 void ctrl_b(termline_s *line)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (line->pos > 0) {
@@ -119,6 +117,7 @@ void ctrl_b(termline_s *line)
 
 void ctrl_c(termline_s *line, char **env)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	write(1, "\n", 1);
@@ -131,6 +130,7 @@ void ctrl_c(termline_s *line, char **env)
 
 char *ctrl_d(termline_s *line, char **env)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (line->len == 0) {
@@ -152,6 +152,7 @@ char *ctrl_d(termline_s *line, char **env)
 
 void ctrl_e(termline_s *line)
 {
+	line->check = 1;
 	while (line->pos != line->len) {
 		write(1, "\033[C", 4);
 		line->pos += 1;
@@ -160,6 +161,7 @@ void ctrl_e(termline_s *line)
 
 void ctrl_f(termline_s *line)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (line->pos < line->len) {
@@ -170,6 +172,7 @@ void ctrl_f(termline_s *line)
 
 void ctrl_h(termline_s *line)
 {
+	line->check = 1;
 	if (line->len > 0 && line->pos > 0) {
 		line->pos -= 1;
 		tputs(line->del, 0, write_char);
@@ -181,6 +184,7 @@ void ctrl_h(termline_s *line)
 
 void ctrl_k(termline_s *line, char **save)
 {
+	line->check = 1;
 	write(1, "\033[A", 4);
 	if (*save != NULL) {
 		free (*save);
@@ -197,6 +201,7 @@ void ctrl_k(termline_s *line, char **save)
 
 void ctrl_l(termline_s *line, char **env)
 {
+	line->check = 1;
 	tputs(line->clear, 0, write_char);
 	prompt(env);
 	write(1, line->str, line->len);
@@ -204,6 +209,7 @@ void ctrl_l(termline_s *line, char **env)
 
 void ctrl_u(termline_s *line, char **save)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (*save != NULL)
@@ -225,6 +231,7 @@ void ctrl_u(termline_s *line, char **save)
 
 void ctrl_w(termline_s *line, char **save)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (*save != NULL) {
@@ -244,6 +251,7 @@ void ctrl_w(termline_s *line, char **save)
 
 void ctrl_y(termline_s *line, char **save)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (*save != NULL) {
@@ -259,6 +267,7 @@ void ctrl_y(termline_s *line, char **save)
 
 void keys_control(char *buffer, termline_s *line)
 {
+	line->check = 1;
 	switch (buffer[2]) {
 		case 65:
 			write(1, "\033[B", 4);
@@ -282,6 +291,7 @@ void keys_control(char *buffer, termline_s *line)
 
 void key_suppr(termline_s *line)
 {
+	line->check = 1;
 	if (line->pos < line->len) {
 		tputs(line->del, 0, write_char);
 		line->str = del_char(line->str, line->len, line->pos);
@@ -295,6 +305,7 @@ void key_suppr(termline_s *line)
 
 void key_delete(termline_s *line)
 {
+	line->check = 1;
 	if (line->len > 0 && line->pos > 0) {
 		line->pos -= 1;
 		write(1, "\033[D", 4);
@@ -318,18 +329,18 @@ termline_s *init_line(void)
 	return (line);
 }
 
-void check_one_sub(char *save)
+void check_one_sub(char **save)
 {
-	if (save != NULL)
-		free(save);
+	if (*save != NULL)
+		free(*save);
 }
 
-char *check_one(char buffer[3], char *save, termline_s *line, char **env)
+char *check_one(char buffer[3], char **save, termline_s *line, char **env)
 {
 	if (buffer[0] == 1)
 		ctrl_a(line);
 	else if (buffer [0] == 2)
-			ctrl_b(line);
+		ctrl_b(line);
 	else if (buffer[0] == 3)
 		ctrl_c(line, env);
 	else if (buffer[0] == 4) {
@@ -341,7 +352,7 @@ char *check_one(char buffer[3], char *save, termline_s *line, char **env)
 	return ("ok");
 }
 
-termline_s *check_two(char buffer[3], char *save, termline_s *line, char **env)
+termline_s *check_two(char buffer[3], char **save, termline_s *line, char **env)
 {
 	if (buffer[0] == 5)
 		ctrl_e(line);
@@ -354,20 +365,20 @@ termline_s *check_two(char buffer[3], char *save, termline_s *line, char **env)
 	else if (buffer[0] == 10)
 		return (line);
 	else if (buffer[0] == 11)
-		ctrl_k(line, &save);
+		ctrl_k(line, save);
 	else if (buffer[0] == 12)
 		ctrl_l(line, env);
 	else if (buffer[0] == 21)
-		ctrl_u(line, &save);
+		ctrl_u(line, save);
 	return (NULL);
 }
 
-void check_three(char buffer[3], char *save, termline_s *line)
+void check_three(char buffer[3], char **save, termline_s *line)
 {
 	if (buffer[0] == 23)
-		ctrl_w(line, &save);
+		ctrl_w(line, save);
 	else if (buffer[0] == 25)
-		ctrl_y(line, &save);
+		ctrl_y(line, save);
 	else if (buffer[0] == 27)
 		keys_control(buffer, line);
 	else if (buffer[0] == 126 && buffer[2] == 51)
@@ -389,24 +400,27 @@ void check_four(char buffer[3], termline_s *line)
 	}
 }
 
-termline_s *get_key(char **env)
+termline_s *get_key(char **env, char **save)
 {
 	char buffer[3];
 	termline_s *line = init_line();
-	static char *save = NULL;
-	termline_s *tmp = NULL;
 
 	prompt(env);
-	if (save == NULL)
-		save = calloc(1, 1);
 	while (1) {
 		write(1, "\033[3g", 5);
 		read(0, buffer, 3);
+		line->check = 0;
 		if (check_one(buffer, save, line, env) == NULL)
 			return (NULL);
-		if ((tmp = check_two(buffer, save, line, env)) != NULL)
-			return (tmp);
+		if (line->check == 1)
+			continue;
+		if (check_two(buffer, save, line, env) != NULL)
+			return (line);
+		if (line->check == 1)
+			continue;
 		check_three(buffer, save, line);
+		if (line->check == 1)
+			continue;
 		check_four(buffer, line);
 	}
 }
@@ -432,16 +446,15 @@ int check_terminal(struct termios *term, struct termios *backup)
 
 int run_term(char **env, char *insert_mode)
 {
-	char *blink = NULL;
 	termline_s *command_line;
 	char *cmd;
+	static char *save = NULL;
 
 	tputs(insert_mode, 0, write_char);
-	if ((blink = tgetstr("vb", NULL)) == NULL)
-		return (-1);
 	while (1) {
-		//tputs(blink, 0, write_char);			//clignotage de merde!
-		if ((command_line = get_key(env)) == NULL)
+		if (save == NULL)
+			save = calloc(1, 1);
+		if ((command_line = get_key(env, &save)) == NULL)
 			break;
 		else {
 			cmd = strdup(command_line->str);

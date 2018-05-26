@@ -37,6 +37,7 @@ typedef struct termline_t {
 	char *clear;
 	int pos;
 	int len;
+	int check;
 } termline_s;
 
 	void	my_putchar(char);
