@@ -29,7 +29,7 @@ void prompt(char **env)
 	char *pwd = getcwd(NULL, 0);
 
 	for (int i = 0; env[i] != NULL; i++) {
-		if (my_strncmp(env[i], "LOGNAME=", 8) == 0) {
+		if (strncmp(env[i], "LOGNAME=", 8) == 0) {
 			host = env[i];
 			host += 8;
 		}
@@ -188,7 +188,8 @@ void ctrl_k(termline_s *line, char **save)
 	}
 	while (line->pos < line->len) {
 		tputs(line->del, 0, write_char);
-		*save = add_char(*save, line->str[line->pos], strlen(*save) + 1, strlen(*save));
+		*save = add_char(*save, line->str[line->pos],
+		strlen(*save) + 1, strlen(*save));
 		line->str = del_char(line->str, line->len, line->pos);
 		line->len -= 1;
 	}
@@ -234,7 +235,8 @@ void ctrl_w(termline_s *line, char **save)
 		line->pos -= 1;
 		write(1, "\033[D", 4);
 		tputs(line->del, 0, write_char);
-		*save = add_char(*save, line->str[line->pos], strlen(*save) + 1, 0);
+		*save = add_char(*save, line->str[line->pos],
+		strlen(*save) + 1, 0);
 		line->str = del_char(line->str, line->len, line->pos);
 		line->len -= 1;
 	}
@@ -248,7 +250,8 @@ void ctrl_y(termline_s *line, char **save)
 		write (1, *save, strlen(*save));
 		for (int i = 0; (*save)[i]; i++) {
 			line->len += 1;
-			line->str = add_char(line->str, (*save)[i], line->len, line->pos);
+			line->str = add_char(line->str, (*save)[i], line->len,
+			line->pos);
 			line->pos += 1;
 		}
 	}
@@ -375,7 +378,8 @@ void check_four(char buffer[3], termline_s *line)
 {
 	if (buffer[0] >= 32 && buffer[0] <= 126) {
 		line->len += 1;
-		line->str = add_char(line->str, buffer[0], line->len, line->pos);
+		line->str = add_char(line->str, buffer[0], line->len,
+		line->pos);
 		line->pos += 1;
 	} else if (buffer[0] == 127)
 		key_delete(line);
