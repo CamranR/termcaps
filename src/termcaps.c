@@ -7,10 +7,6 @@
 
 #include "my.h"
 
-#define ESC 27
-
-#define gotoxy(x,y) printf("\033[%d;%dH", (x), (y))
-
 int write_char(int c)
 {
 	write(1, &c, 1);
@@ -29,7 +25,7 @@ void prompt(char **env)
 	char *pwd = getcwd(NULL, 0);
 
 	for (int i = 0; env[i] != NULL; i++) {
-		if (my_strncmp(env[i], "LOGNAME=", 8) == 0) {
+		if (strncmp(env[i], "LOGNAME=", 8) == 0) {
 			host = env[i];
 			host += 8;
 		}
@@ -99,6 +95,7 @@ char *del_char(char *str, int len, int pos)
 
 void ctrl_a(termline_s *line)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	while (line->pos > 0) {
@@ -109,6 +106,7 @@ void ctrl_a(termline_s *line)
 
 void ctrl_b(termline_s *line)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (line->pos > 0) {
@@ -119,6 +117,7 @@ void ctrl_b(termline_s *line)
 
 void ctrl_c(termline_s *line, char **env)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	write(1, "\n", 1);
@@ -131,6 +130,7 @@ void ctrl_c(termline_s *line, char **env)
 
 char *ctrl_d(termline_s *line, char **env)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (line->len == 0) {
@@ -152,6 +152,7 @@ char *ctrl_d(termline_s *line, char **env)
 
 void ctrl_e(termline_s *line)
 {
+	line->check = 1;
 	while (line->pos != line->len) {
 		write(1, "\033[C", 4);
 		line->pos += 1;
@@ -160,6 +161,7 @@ void ctrl_e(termline_s *line)
 
 void ctrl_f(termline_s *line)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (line->pos < line->len) {
@@ -170,6 +172,7 @@ void ctrl_f(termline_s *line)
 
 void ctrl_h(termline_s *line)
 {
+	line->check = 1;
 	if (line->len > 0 && line->pos > 0) {
 		line->pos -= 1;
 		tputs(line->del, 0, write_char);
@@ -181,6 +184,7 @@ void ctrl_h(termline_s *line)
 
 void ctrl_k(termline_s *line, char **save)
 {
+	line->check = 1;
 	write(1, "\033[A", 4);
 	if (*save != NULL) {
 		free (*save);
@@ -188,7 +192,8 @@ void ctrl_k(termline_s *line, char **save)
 	}
 	while (line->pos < line->len) {
 		tputs(line->del, 0, write_char);
-		*save = add_char(*save, line->str[line->pos], strlen(*save) + 1, strlen(*save));
+		*save = add_char(*save, line->str[line->pos],
+		strlen(*save) + 1, strlen(*save));
 		line->str = del_char(line->str, line->len, line->pos);
 		line->len -= 1;
 	}
@@ -196,6 +201,7 @@ void ctrl_k(termline_s *line, char **save)
 
 void ctrl_l(termline_s *line, char **env)
 {
+	line->check = 1;
 	tputs(line->clear, 0, write_char);
 	prompt(env);
 	write(1, line->str, line->len);
@@ -203,6 +209,7 @@ void ctrl_l(termline_s *line, char **env)
 
 void ctrl_u(termline_s *line, char **save)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (*save != NULL)
@@ -224,6 +231,7 @@ void ctrl_u(termline_s *line, char **save)
 
 void ctrl_w(termline_s *line, char **save)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (*save != NULL) {
@@ -234,7 +242,8 @@ void ctrl_w(termline_s *line, char **save)
 		line->pos -= 1;
 		write(1, "\033[D", 4);
 		tputs(line->del, 0, write_char);
-		*save = add_char(*save, line->str[line->pos], strlen(*save) + 1, 0);
+		*save = add_char(*save, line->str[line->pos],
+		strlen(*save) + 1, 0);
 		line->str = del_char(line->str, line->len, line->pos);
 		line->len -= 1;
 	}
@@ -242,13 +251,15 @@ void ctrl_w(termline_s *line, char **save)
 
 void ctrl_y(termline_s *line, char **save)
 {
+	line->check = 1;
 	write(1, "\033[D", 4);
 	tputs(line->del, 0, write_char);
 	if (*save != NULL) {
 		write (1, *save, strlen(*save));
 		for (int i = 0; (*save)[i]; i++) {
 			line->len += 1;
-			line->str = add_char(line->str, (*save)[i], line->len, line->pos);
+			line->str = add_char(line->str, (*save)[i], line->len,
+			line->pos);
 			line->pos += 1;
 		}
 	}
@@ -256,6 +267,7 @@ void ctrl_y(termline_s *line, char **save)
 
 void keys_control(char *buffer, termline_s *line)
 {
+	line->check = 1;
 	switch (buffer[2]) {
 		case 65:
 			write(1, "\033[B", 4);
@@ -279,6 +291,7 @@ void keys_control(char *buffer, termline_s *line)
 
 void key_suppr(termline_s *line)
 {
+	line->check = 1;
 	if (line->pos < line->len) {
 		tputs(line->del, 0, write_char);
 		line->str = del_char(line->str, line->len, line->pos);
@@ -292,6 +305,7 @@ void key_suppr(termline_s *line)
 
 void key_delete(termline_s *line)
 {
+	line->check = 1;
 	if (line->len > 0 && line->pos > 0) {
 		line->pos -= 1;
 		write(1, "\033[D", 4);
@@ -315,65 +329,99 @@ termline_s *init_line(void)
 	return (line);
 }
 
-termline_s *get_key(char **env)
+void check_one_sub(char **save)
+{
+	if (*save != NULL)
+		free(*save);
+}
+
+char *check_one(char buffer[3], char **save, termline_s *line, char **env)
+{
+	if (buffer[0] == 1)
+		ctrl_a(line);
+	else if (buffer [0] == 2)
+		ctrl_b(line);
+	else if (buffer[0] == 3)
+		ctrl_c(line, env);
+	else if (buffer[0] == 4) {
+		if (ctrl_d(line, env) == NULL) {
+			check_one_sub(save);
+			return (NULL);
+		}
+	}
+	return ("ok");
+}
+
+termline_s *check_two(char buffer[3], char **save, termline_s *line, char **env)
+{
+	if (buffer[0] == 5)
+		ctrl_e(line);
+	else if (buffer [0] == 6)
+		ctrl_f(line);
+	else if (buffer [0] == 8)
+		ctrl_h(line);
+	// else if (buffer[0] == 9)
+	// 	//	place autocomplete here!!!!
+	else if (buffer[0] == 10)
+		return (line);
+	else if (buffer[0] == 11)
+		ctrl_k(line, save);
+	else if (buffer[0] == 12)
+		ctrl_l(line, env);
+	else if (buffer[0] == 21)
+		ctrl_u(line, save);
+	return (NULL);
+}
+
+void check_three(char buffer[3], char **save, termline_s *line)
+{
+	if (buffer[0] == 23)
+		ctrl_w(line, save);
+	else if (buffer[0] == 25)
+		ctrl_y(line, save);
+	else if (buffer[0] == 27)
+		keys_control(buffer, line);
+	else if (buffer[0] == 126 && buffer[2] == 51)
+		key_suppr(line);
+}
+
+void check_four(char buffer[3], termline_s *line)
+{
+	if (buffer[0] >= 32 && buffer[0] <= 126) {
+		line->len += 1;
+		line->str = add_char(line->str, buffer[0], line->len,
+		line->pos);
+		line->pos += 1;
+	} else if (buffer[0] == 127)
+		key_delete(line);
+	else if (buffer[0] != 15 && buffer[0] != 7 && buffer[0] != 14) {
+		write(1, "\033[D", 4);
+		tputs(line->del, 0, write_char);
+	}
+}
+
+termline_s *get_key(char **env, char **save)
 {
 	char buffer[3];
 	termline_s *line = init_line();
-	static char *save = NULL;
 
 	prompt(env);
-	if (save == NULL)
-		save = calloc(1, 1);
 	while (1) {
 		write(1, "\033[3g", 5);
 		read(0, buffer, 3);
-		//printf("\n%d, %d, %d\n", buffer[0], buffer[1], buffer[2]);
-		if (buffer[0] == 1)
-			ctrl_a(line);
-		else if (buffer [0] == 2)
-			ctrl_b(line);
-		else if (buffer[0] == 3)
-			ctrl_c(line, env);
-		else if (buffer[0] == 4) {
-			if (ctrl_d(line, env) == NULL) {
-				if (save != NULL)
-					free(save);
-				return (NULL);
-			}
-		} else if (buffer[0] == 5)
-			ctrl_e(line);
-		else if (buffer [0] == 6)
-			ctrl_f(line);
-		else if (buffer [0] == 8)
-			ctrl_h(line);
-		// else if (buffer[0] == 9)
-		// 	//	place autocomplete here!!!!
-		else if (buffer[0] == 10)
+		line->check = 0;
+		if (check_one(buffer, save, line, env) == NULL)
+			return (NULL);
+		if (line->check == 1)
+			continue;
+		if (check_two(buffer, save, line, env) != NULL)
 			return (line);
-		else if (buffer[0] == 11)
-			ctrl_k(line, &save);
-		else if (buffer[0] == 12)
-			ctrl_l(line, env);
-		else if (buffer[0] == 21)
-			ctrl_u(line, &save);
-		else if (buffer[0] == 23)
-			ctrl_w(line, &save);
-		else if (buffer[0] == 25)
-			ctrl_y(line, &save);
-		else if (buffer[0] == 27)
-			keys_control(buffer, line);
-		else if (buffer[0] == 126 && buffer[2] == 51)
-			key_suppr(line);
-		else if (buffer[0] >= 32 && buffer[0] <= 126) {
-			line->len += 1;
-			line->str = add_char(line->str, buffer[0], line->len, line->pos);
-			line->pos += 1;
-		} else if (buffer[0] == 127)
-			key_delete(line);
-		else if (buffer[0] != 15 && buffer[0] != 7 && buffer[0] != 14) {
-			write(1, "\033[D", 4);
-			tputs(line->del, 0, write_char);
-		}
+		if (line->check == 1)
+			continue;
+		check_three(buffer, save, line);
+		if (line->check == 1)
+			continue;
+		check_four(buffer, line);
 	}
 }
 
@@ -398,16 +446,15 @@ int check_terminal(struct termios *term, struct termios *backup)
 
 int run_term(char **env, char *insert_mode)
 {
-	char *blink = NULL;
 	termline_s *command_line;
 	char *cmd;
+	static char *save = NULL;
 
 	tputs(insert_mode, 0, write_char);
-	if ((blink = tgetstr("vb", NULL)) == NULL)
-		return (-1);
 	while (1) {
-		//tputs(blink, 0, write_char);			//clignotage de merde!
-		if ((command_line = get_key(env)) == NULL)
+		if (save == NULL)
+			save = calloc(1, 1);
+		if ((command_line = get_key(env, &save)) == NULL)
 			break;
 		else {
 			cmd = strdup(command_line->str);
