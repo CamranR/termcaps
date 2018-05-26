@@ -40,4 +40,6 @@ typedef struct termline_t {
 	int check;
 } termline_s;
 
+char *read_file(char *path);
+
 #endif	/* MY_Y_ */

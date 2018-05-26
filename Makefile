@@ -12,6 +12,7 @@ WHITE   =       \033[0m
 CYAN            = \033[01;34m
 
 SRC	=	./src/termcaps.c			\
+		./src/read_file.c
 
 OBJ	=	$(SRC:.c=.o)
 

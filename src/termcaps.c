@@ -13,6 +13,24 @@ int write_char(int c)
 	return (0);
 }
 
+
+void check_git_prompt(void)
+{
+	int flag = -42;
+	char *branch = NULL;
+
+	flag = system("git rev-parse --is-inside-work-tree > /dev/null 2>&1");
+	if (flag == 0) {
+		system("git rev-parse --abbrev-ref HEAD > .tmp_git");
+		branch = read_file(".tmp_git");
+		for (int i = 0; branch[i] != '\n'; i++)
+			printf("%s%c%s", CYAN, branch[i], WHITE);
+		printf("> ");
+		fflush(stdout);
+		system("rm .tmp_git");
+	}
+}
+
 void prompt(char **env)
 {
 	char *host = NULL;
@@ -28,28 +46,9 @@ void prompt(char **env)
 		printf("%s%s%s:%s%s%s> %s", UNDERLINE, RED, host, WHITE,
 				GREEN, pwd, WHITE);
 		fflush(stdout);
+		check_git_prompt();
 	}
 	free(pwd);
-}
-
-void get_cursor_position(int *col, int *rows)
-{
-	int a = 0;
-	int i = 0;
-	char buf[4];
-
-	write(1, "\033[6n", 4);
-	read(1, buf, 4);
-	while (buf[i]) {
-		if (buf[i] >= 48 && buf[i] <= 57) {
-			if (a == 0)
-				*rows = atoi(&buf[i]);
-			else
-				*col = atoi(&buf[i]);
-			a++;
-		}
-		i++;
-	}
 }
 
 void free_termline(termline_s *line)
@@ -438,10 +437,8 @@ termline_s *get_key(char **env, char **save)
 
 int check_terminal(struct termios *term, struct termios *backup)
 {
-	char *name_term = NULL;
+	char *name_term = "xterm-256color";
 
-	if ((name_term = getenv("TERM")) == NULL)
-		return (-1);
 	if (tgetent(NULL, name_term) == ERR)
 		return (-1);
 	if (tcgetattr(0, term) == -1)
@@ -476,19 +473,6 @@ int run_term(char **env, char *insert_mode)
 	return (0);
 }
 
-void run_term_no_env(char **env)
-{
-	int vale = 0;
-	char *geted = NULL;
-	size_t n;
-
-	while (1) {
-		prompt(env);
-		if ((vale = getline(&geted, &n, stdin)) < 0)
-			break;
-	}
-}
-
 int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 		char **env)
 {
@@ -496,7 +480,6 @@ int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 	struct termios term;
 	struct termios backup;
 
-	if (env[0]) {
 		if (check_terminal(&term, &backup) == -1)
 			return (84);
 		if (tcsetattr(0, TCSADRAIN, &term) == -1)
@@ -506,8 +489,5 @@ int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av,
 		run_term(env, insert_mode);
 		if (tcsetattr(0, TCSADRAIN, &term) == -1)
 			return (84);
-	} else {
-		run_term_no_env(env);
-	}
 	return (0);
 }
